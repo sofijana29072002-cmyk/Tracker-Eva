@@ -43,8 +43,10 @@ function computeCorrelations(
   // Group by name
   const nameMap = new Map<string, (FoodPoint | ContactPoint)[]>()
   for (const item of items) {
-    const name = (item as Record<string, string>)[nameKey]
-    if (!nameMap.has(name)) nameMap.set(name, [])
+const name = nameKey === 'food_name'
+  ? (item as FoodPoint).food_name
+  : (item as ContactPoint).contact_name
+  if (!nameMap.has(name)) nameMap.set(name, [])
     nameMap.get(name)!.push(item)
   }
 
