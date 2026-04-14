@@ -31,28 +31,42 @@ interface CorrelationRow {
 
 function computeCorrelations(
   skinEntries: SkinPoint[],
-  items: (FoodPoint | ContactPoint)[],
-  nameKey: 'food_name' | 'contact_name',
+  items: FoodPoint[] | ContactPoint[],
   type: 'food' | 'contact',
   windowDays = 2
 ): CorrelationRow[] {
   if (skinEntries.length === 0 || items.length === 0) return []
-
   const globalAvg = skinEntries.reduce((s, e) => s + e.severity, 0) / skinEntries.length
-
-  // Group by name
-  const nameMap = new Map<string, (FoodPoint | ContactPoint)[]>()
+  const nameMap: Record<string, (FoodPoint | ContactPoint)[]> = {}
   for (const item of items) {
-const name = nameKey === 'food_name'
-  ? (item as FoodPoint).food_name
-  : (item as ContactPoint).contact_name
-  if (!nameMap.has(name)) nameMap.set(name, [])
-    nameMap.get(name)!.push(item)
+    const name = type === 'food'
+      ? (item as FoodPoint).food_name
+      : (item as ContactPoint).contact_name
+    if (!nameMap[name]) nameMap[name] = []
+    nameMap[name].push(item)
   }
-
   const rows: CorrelationRow[] = []
-  for (const [name, occurrences] of nameMap.entries()) {
+  for (const name of Object.keys(nameMap)) {
+    const occurrences = nameMap[name]
     const severitiesAfter: number[] = []
+    for (const occ of occurrences) {
+      const occDate = parseISO(occ.date)
+      for (const skin of skinEntries) {
+        const diff = differenceInDays(parseISO(skin.date), occDate)
+        if (diff >= 0 && diff <= windowDays) severitiesAfter.push(skin.severity)
+      }
+    }
+    if (severitiesAfter.length === 0) continue
+    const avgAfter = severitiesAfter.reduce((s, v) => s + v, 0) / severitiesAfter.length
+    const delta = avgAfter - globalAvg
+    rows.push({ name, type, count: occurrences.length,
+      avgSeverityAfter: Math.round(avgAfter * 10) / 10,
+      globalAvg: Math.round(globalAvg * 10) / 10,
+      delta: Math.round(delta * 10) / 10,
+      suspicious: delta > 0.5 })
+  }
+  return rows.sort((a, b) => b.delta - a.delta)
+}
 
     for (const occ of occurrences) {
       const occDate = parseISO(occ.date)
@@ -113,11 +127,11 @@ export default function AnalyticsClient({ skinEntries, foodEntries, contactEntri
 
   // Correlations
   const foodCorr = useMemo(() =>
-    computeCorrelations(filteredSkin, filteredFood, 'food_name', 'food')
+    computeCorrelations(filteredSkin, filteredFood, 'food')
   , [filteredSkin, filteredFood])
 
   const contactCorr = useMemo(() =>
-    computeCorrelations(filteredSkin, filteredContact, 'contact_name', 'contact')
+    computeCorrelations(filteredSkin, filteredContact, 'contact')
   , [filteredSkin, filteredContact])
 
   const allCorr = useMemo(() =>
