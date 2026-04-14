@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { SkinEntry, FoodEntry, ContactEntry, Medication, EnvironmentEntry } from '@/lib/supabase/types'
 
 function escapeCSV(val: unknown): string {
   if (val == null) return ''
@@ -28,11 +29,11 @@ export async function GET(request: Request) {
 
   // Fetch all data in parallel
   const [
-    { data: skinEntries },
-    { data: foodEntries },
-    { data: contactEntries },
-    { data: medications },
-    { data: envEntries },
+    { data: skinRaw },
+    { data: foodRaw },
+    { data: contactRaw },
+    { data: medRaw },
+    { data: envRaw },
   ] = await Promise.all([
     supabase.from('skin_entries').select('*').eq('user_id', user.id).gte('date', from).lte('date', to).order('date'),
     supabase.from('food_entries').select('*').eq('user_id', user.id).gte('date', from).lte('date', to).order('date'),
@@ -41,12 +42,18 @@ export async function GET(request: Request) {
     supabase.from('environment_entries').select('*').eq('user_id', user.id).gte('date', from).lte('date', to).order('date'),
   ])
 
+  const skinEntries = (skinRaw ?? []) as SkinEntry[]
+  const foodEntries = (foodRaw ?? []) as FoodEntry[]
+  const contactEntries = (contactRaw ?? []) as ContactEntry[]
+  const medications = (medRaw ?? []) as Medication[]
+  const envEntries = (envRaw ?? []) as EnvironmentEntry[]
+
   const lines: string[] = []
 
   // ---- Skin entries ----
   lines.push('=== СОСТОЯНИЕ КОЖИ ===')
   lines.push('Дата,Время,Оценка (1-5),Зоны,Симптомы,Заметки')
-  for (const e of skinEntries ?? []) {
+  for (const e of skinEntries) {
     lines.push(toCSVRow({
       date: e.date,
       time: e.time ?? '',
@@ -62,7 +69,7 @@ export async function GET(request: Request) {
   // ---- Food entries ----
   lines.push('=== ЕДА ===')
   lines.push('Дата,Время,Продукт,Категория,Новый продукт,Заметки')
-  for (const e of foodEntries ?? []) {
+  for (const e of foodEntries) {
     lines.push(toCSVRow({
       date: e.date,
       time: e.time ?? '',
@@ -78,7 +85,7 @@ export async function GET(request: Request) {
   // ---- Contact entries ----
   lines.push('=== КОНТАКТЫ ===')
   lines.push('Дата,Время,Тип,Название,Зона контакта,Заметки')
-  for (const e of contactEntries ?? []) {
+  for (const e of contactEntries) {
     lines.push(toCSVRow({
       date: e.date,
       time: e.time ?? '',
@@ -94,7 +101,7 @@ export async function GET(request: Request) {
   // ---- Medications ----
   lines.push('=== ЛЕКАРСТВА И УХОД ===')
   lines.push('Дата,Время,Тип,Название,Зона,Заметки')
-  for (const e of medications ?? []) {
+  for (const e of medications) {
     lines.push(toCSVRow({
       date: e.date,
       time: e.time ?? '',
@@ -110,7 +117,7 @@ export async function GET(request: Request) {
   // ---- Environment ----
   lines.push('=== ОКРУЖАЮЩАЯ СРЕДА ===')
   lines.push('Дата,Температура (°C),Влажность (%),Погода,Заметки')
-  for (const e of envEntries ?? []) {
+  for (const e of envEntries) {
     lines.push(toCSVRow({
       date: e.date,
       temperature: e.temperature ?? '',
