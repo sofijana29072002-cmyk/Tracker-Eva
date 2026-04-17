@@ -32,7 +32,7 @@ function getSeverityBg(severity: number) {
 export default function DashboardClient({ profile, skinEntries, foodCount, contactCount, weekSkin, today }: Props) {
   const latestSkin = skinEntries[0]
   const childName = profile?.child_name ?? 'Малыш'
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null)
+const [avatarUrl, setAvatarUrl] = useState<string | null>((profile as any)?.avatar_url ?? null)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
