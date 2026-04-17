@@ -21,7 +21,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-skin-50 flex flex-col">
-      {/* Top header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🌿</span>
@@ -32,12 +31,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 pb-nav overflow-x-hidden">
         {children}
       </main>
 
-      {/* Bottom navigation — горизонтальный скролл */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
         <div className="flex overflow-x-auto scrollbar-hide h-16">
           {NAV_ITEMS.map((item) => {
